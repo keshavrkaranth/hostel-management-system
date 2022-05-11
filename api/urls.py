@@ -5,6 +5,8 @@ from rest_framework import routers
 router = routers.DefaultRouter()
 
 router.register('rooms',RoomViewSet,'rooms')
+router.register('hostel',HostelViewSet,'hostel')
+router.register('student',StudentViewSet,'student')
 
 
 urlpatterns = router.urls + [
