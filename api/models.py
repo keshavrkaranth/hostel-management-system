@@ -23,15 +23,31 @@ class MyAccountManager(BaseUserManager):
         user.save()
         return user
 
-    def create_superuser(self, name, username, password=None):
+    def create_warden(self, name, email, username, password=None):
+        if not email:
+            raise ValidationError('User must have email address')
+        if not username:
+            raise ValidationError('User must have username')
         user = self.model(
+            email=self.normalize_email(email),
             username=username,
             name=name,
         )
         user.set_password(password)
-        user.is_staff = True
-        user.is_admin = True
         user.is_warden = True
+        user.is_active = True
+        user.save()
+        return user
+
+    def create_superuser(self, name, username, email, password=None):
+        user = self.model(
+            email=self.normalize_email(email),
+            username=username,
+            name=name,
+        )
+        user.set_password(password)
+        user.is_admin = True
+        user.is_staff = True
         user.is_active = True
         user.is_superadmin = True
         user.save()
@@ -41,7 +57,7 @@ class MyAccountManager(BaseUserManager):
 class Account(AbstractBaseUser, PermissionsMixin):
     name = models.CharField(max_length=50)
     username = models.CharField(max_length=50, unique=True)
-    email = models.EmailField(max_length=30)
+    email = models.EmailField(max_length=30,unique=True)
     phone_number = models.CharField(max_length=15)
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(auto_now_add=True)
@@ -52,8 +68,8 @@ class Account(AbstractBaseUser, PermissionsMixin):
     is_warden = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
 
-    USERNAME_FIELD = 'username'
-    REQUIRED_FIELDS = ['name', 'phone_number']
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['name', 'username']
 
     objects = MyAccountManager()
 
@@ -74,7 +90,7 @@ class Student(models.Model):
         Account,
         on_delete=models.CASCADE)
     gender_choices = [('M', 'Male'), ('F', 'Female')]
-    address = models.TextField()
+    address = models.TextField(null=True)
     father_name = models.CharField(max_length=200, null=True)
     father_mbl_no = models.BigIntegerField(default=None, null=True)
     USN = models.CharField(max_length=10, unique=True, null=True)
@@ -94,6 +110,9 @@ class Student(models.Model):
         null=True)
     room_allotted = models.BooleanField(default=False)
     no_dues = models.BooleanField(default=True)
+    has_filled = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return str(self.user.username)
@@ -117,6 +136,7 @@ class Room(models.Model):
     hostel = models.ForeignKey('Hostel', on_delete=models.CASCADE)
     repair = models.CharField(max_length=100, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return '%s %s' % (self.room_number, self.hostel)
@@ -138,6 +158,8 @@ class Hostel(models.Model):
         default=None,
         null=True)
     caretaker = models.CharField(max_length=100, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
@@ -152,6 +174,8 @@ class Warden(models.Model):
     name = models.CharField(max_length=200, null=True)
     hostel = models.ForeignKey('Hostel', default=None, null=True,
                                on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
@@ -177,6 +201,7 @@ class Leave(models.Model):
     accept = models.BooleanField(default=False)
     reject = models.BooleanField(default=False)
     confirm_time = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f'{self.student.user.username} '

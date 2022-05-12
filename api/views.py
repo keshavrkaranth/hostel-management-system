@@ -9,7 +9,7 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend, ChoiceFilter
 from rest_framework import filters
-from .permissions import IsWardenReadOnly, IsWarden
+from .permissions import IsWardenReadOnly, IsWarden, IsStudent
 
 from . import serializers
 from .models import *
@@ -61,12 +61,94 @@ class HostelViewSet(ModelViewSet):
 
 
 class StudentViewSet(ModelViewSet):
-    queryset = Student.objects.all()
+    queryset = Student.objects.all().order_by('-created_at')
     serializer_class = serializers.StudentSerializer
     pagination_class = PageNumberPagination
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['gender', 'Branch', 'room', 'room__hostel']
 
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def addStudentRoom(request):
+    user = request.user
+    if user.is_warden:
+        return Response("warden has no rights to assign room", status=status.HTTP_400_BAD_REQUEST)
+    room_number = request.data.get('room_number')
+    hostel = request.data.get('hostel')
+    if not Room.objects.filter(room_number=room_number, hostel_id=hostel).exists():
+        return Response("Invalid Room Number or Hostel id", status=status.HTTP_400_BAD_REQUEST)
+
+    room = Room.objects.get(room_number=room_number, hostel_id=hostel)
+    student = Student.objects.get(user_id=user.id)
+
+    if room.current_no_of_persons == room.max_no_of_persons:
+        return Response("Room is already filled", status=status.HTTP_400_BAD_REQUEST)
+
+    if student.room_allotted:
+        return Response("Room is already alloted for this student", status=status.HTTP_400_BAD_REQUEST)
+    if not student.no_dues:
+        return Response('Student has previous dues please contact warden or make payment',
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    student.room = room
+    student.room_allotted = True
+    student.save()
+    room.current_no_of_persons += 1
+    room.vacant = False
+    room.save()
+    return Response("Room alloted for student", status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+def registerStudent(request):
+    request_map = ['name', 'email', 'password', 'phone_number']
+    name = request.data.get('name')
+    email = request.data.get('email')
+    password = request.data.get('password')
+    phone_number = request.data.get('phone_number')
+
+    for i in request_map:
+        if i not in request.data:
+            return Response(f"{i} is required", status=status.HTTP_400_BAD_REQUEST)
+    if Account.objects.filter(email=email).exists():
+        return Response("Email id already exists", status=status.HTTP_400_BAD_REQUEST)
+    if Account.objects.filter(phone_number=phone_number).exists():
+        return Response("Phone number already exists", status=status.HTTP_400_BAD_REQUEST)
+
+    acc = Account.objects.create_user(name=name, username=email, email=email, password=password)
+    acc.phone_number = phone_number
+    acc.save()
+    Student.objects.create(user=acc)
+    serializer = serializers.UserSerializerWithToken(acc)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET','PATCH'])
+@permission_classes([IsAuthenticated, IsStudent])
+def profile(request):
+    user = request.user
+    student = Student.objects.get(user=user)
+    if request.method == 'GET':
+        data = serializers.StudentSerializer(student).data
+        return Response(data, status=status.HTTP_200_OK)
+    elif request.method == 'PATCH':
+        data = serializers.StudentSerializer(student,data=request.data)
+        data.is_valid(raise_exception=True)
+        data.save()
+        student.has_filled = True
+        student.save()
+        return Response(data.data, status=status.HTTP_200_OK)
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated, IsStudent])
+def updateProfile(request):
+    user  = request.user
+    student = Student.objects.get(user=user)
+    data = serializers.StudentSerializer(student)
+    data.is_valid(raise_exception=True)
+    data.save()
+    return Response(data.data,status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

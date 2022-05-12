@@ -12,4 +12,8 @@ router.register('student',StudentViewSet,'student')
 urlpatterns = router.urls + [
     path('', homePage),
     path('login/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('registerstudent/',registerStudent),
+    path('profile/',profile),
+    path('updateprofile/',updateProfile),
+    path('assignstudentroom/',addStudentRoom),
 ]

@@ -11,3 +11,7 @@ class IsWardenReadOnly(permissions.BasePermission):
 class IsWarden(permissions.BasePermission):
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_warden)
+
+class IsStudent(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_student)

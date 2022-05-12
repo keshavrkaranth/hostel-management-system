@@ -4,10 +4,6 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .models import *
 
 
-
-
-
-
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
@@ -23,7 +19,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = Account
-        fields = ['id', 'username', 'email', 'name']
+        fields = ['username', 'email', 'name']
 
 
 class UserSerializerWithToken(UserSerializer):
@@ -33,7 +29,7 @@ class UserSerializerWithToken(UserSerializer):
 
     class Meta:
         model = Account
-        fields = ['id', 'username', 'email', 'name', 'token', 'is_student', 'is_warden']
+        fields = ['username', 'email', 'name', 'token', 'is_student', 'is_warden']
 
     def get_is_student(self, obj):
         return obj.is_student
@@ -47,25 +43,27 @@ class UserSerializerWithToken(UserSerializer):
 
 
 class StudentSerializer(serializers.ModelSerializer):
-    account = serializers.SerializerMethodField(read_only=True)
+    room = serializers.SerializerMethodField(read_only=True)
+    user = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Student
-        fields = '__all__'
+        fields = ['father_name', 'father_mbl_no', 'address', 'USN', 'Branch', 'gender', 'room', 'user']
 
-    def get_account(self, obj):
-        a = Account.objects.get(id=obj.user.id)
-        return UserSerializer(a).data
+    def get_room(self, obj):
+        if obj.room_allotted:
+            room = obj.room
+            return RoomsSerializer(room).data
+        return None
 
-
+    def get_user(self, obj):
+        return UserSerializer(obj.user).data
 
 
 class RoomsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Room
         fields = ('room_number', 'room_type', 'max_no_of_persons', 'current_no_of_persons', 'hostel')
-
-
 
 
 class HostelSerializer(serializers.ModelSerializer):
