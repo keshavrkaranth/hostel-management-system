@@ -70,3 +70,13 @@ class HostelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Hostel
         fields = ('name', 'gender', 'caretaker')
+
+
+class LeaveSerializer(serializers.ModelSerializer):
+    student = serializers.SerializerMethodField()
+    class Meta:
+        model = Leave
+        fields = ('id','student', 'start_date', 'end_date', 'reason', 'accept', 'reject')
+
+    def get_student(self,obj):
+        return obj.student.user.username

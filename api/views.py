@@ -2,7 +2,7 @@ import django_filters
 from django_filters import FilterSet
 from rest_framework.response import Response
 from rest_framework import status, permissions
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import IsAuthenticated, BasePermission
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.viewsets import ModelViewSet
@@ -13,6 +13,7 @@ from .permissions import IsWardenReadOnly, IsWarden, IsStudent
 
 from . import serializers
 from .models import *
+import datetime
 
 
 class MyTokenObtainPairView(TokenObtainPairView):
@@ -33,7 +34,6 @@ class RoomViewSet(ModelViewSet):
         input_map = ['room_number', 'room_type', 'maximum_number_of_persons', 'hostel']
         room_number = self.request.data.get('room_number')
         room_type = self.request.data.get('room_type')
-        maximum_number_of_persons = self.request.data.get('maximum_number_of_persons')
         hostel = self.request.data.get('hostel')
         for i in input_map:
             if i not in self.request.data:
@@ -66,6 +66,62 @@ class StudentViewSet(ModelViewSet):
     pagination_class = PageNumberPagination
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['gender', 'Branch', 'room', 'room__hostel']
+
+
+class LeaveViewSet(ModelViewSet):
+    queryset = Leave.objects.all()
+    serializer_class = serializers.LeaveSerializer
+    # permission_classes = [IsWarden]
+    pagination_class = PageNumberPagination
+
+    def list(self, request, *args, **kwargs):
+        if request.user.is_warden:
+            s = Leave.objects.all().order_by('-start_date')
+            return Response(serializers.LeaveSerializer(s, many=True).data)
+        else:
+            return Response("Dont have permission")
+
+    def create(self, request, *args, **kwargs):
+        input_map = ['start_date', 'end_date', 'reason']
+        start_date = datetime.datetime.fromisoformat(self.request.data.get('start_date'))
+        end_date = datetime.datetime.fromisoformat(self.request.data.get('end_date'))
+        print(start_date, end_date)
+        reason = self.request.data.get('reason')
+        if request.user.is_warden:
+            return Response("Warden not allowed to add leave", status=status.HTTP_400_BAD_REQUEST)
+        user = request.user
+        student = Student.objects.get(user=user)
+        if not student.room_allotted:
+            return Response("Select the room to continue with the leave application")
+
+        if not student.has_filled:
+            return Response("Student need to fill all the profile details", status=status.HTTP_400_BAD_REQUEST)
+        for i in input_map:
+            if i not in self.request.data:
+                return Response(f"{i} is required", status=status.HTTP_400_BAD_REQUEST)
+
+        delta = end_date - start_date
+        if delta.days >= 0 and (start_date.date() - datetime.date.today()).days >= 0:
+            usr_contr = Leave.objects.filter(
+                student=request.user.student, start_date__lte=end_date, end_date__gte=start_date
+            )
+            count = usr_contr.count()
+            count = int(count)
+            if count == 0:
+                Leave.objects.create(student=student, start_date=start_date, end_date=end_date, reason=reason)
+                return Response("Leave application submitted", status=status.HTTP_201_CREATED)
+            else:
+                return Response("Already in the  Leave  period", status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response('Invalid Date', status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False)
+    @permission_classes([IsStudent])
+    def me(self, request):
+        user_id = request.user
+        student = Leave.objects.filter(student__user_id=user_id)
+        data = serializers.LeaveSerializer(student, many=True)
+        return Response(data.data)
 
 
 @api_view(['POST'])
@@ -124,7 +180,7 @@ def registerStudent(request):
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-@api_view(['GET','PATCH'])
+@api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated, IsStudent])
 def profile(request):
     user = request.user
@@ -133,22 +189,24 @@ def profile(request):
         data = serializers.StudentSerializer(student).data
         return Response(data, status=status.HTTP_200_OK)
     elif request.method == 'PATCH':
-        data = serializers.StudentSerializer(student,data=request.data)
+        data = serializers.StudentSerializer(student, data=request.data, partial=True)
         data.is_valid(raise_exception=True)
         data.save()
         student.has_filled = True
         student.save()
         return Response(data.data, status=status.HTTP_200_OK)
 
+
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated, IsStudent])
 def updateProfile(request):
-    user  = request.user
+    user = request.user
     student = Student.objects.get(user=user)
     data = serializers.StudentSerializer(student)
     data.is_valid(raise_exception=True)
     data.save()
-    return Response(data.data,status=status.HTTP_200_OK)
+    return Response(data.data, status=status.HTTP_200_OK)
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
