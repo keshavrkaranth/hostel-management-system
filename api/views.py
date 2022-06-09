@@ -75,17 +75,23 @@ class LeaveViewSet(ModelViewSet):
     pagination_class = PageNumberPagination
 
     def list(self, request, *args, **kwargs):
-        if request.user.is_warden:
+        if not request.user.is_anonymous and request.user.is_warden:
             s = Leave.objects.all().order_by('-start_date')
             return Response(serializers.LeaveSerializer(s, many=True).data)
         else:
-            return Response("Dont have permission")
+            return Response("Dont have permission",status=status.HTTP_400_BAD_REQUEST)
 
     def create(self, request, *args, **kwargs):
         input_map = ['start_date', 'end_date', 'reason']
+        for i in input_map:
+            if self.request.data.get('start_date') == '':
+                return Response("Start date is required",status=status.HTTP_400_BAD_REQUEST)
+            if self.request.data.get('end_date') == '':
+                return Response("End date is required",status=status.HTTP_400_BAD_REQUEST)
+            if i not in self.request.data:
+                return Response(f"{i} is required", status=status.HTTP_400_BAD_REQUEST)
         start_date = datetime.datetime.fromisoformat(self.request.data.get('start_date'))
         end_date = datetime.datetime.fromisoformat(self.request.data.get('end_date'))
-        print(start_date, end_date)
         reason = self.request.data.get('reason')
         if request.user.is_warden:
             return Response("Warden not allowed to add leave", status=status.HTTP_400_BAD_REQUEST)
@@ -96,9 +102,6 @@ class LeaveViewSet(ModelViewSet):
 
         if not student.has_filled:
             return Response("Student need to fill all the profile details", status=status.HTTP_400_BAD_REQUEST)
-        for i in input_map:
-            if i not in self.request.data:
-                return Response(f"{i} is required", status=status.HTTP_400_BAD_REQUEST)
 
         delta = end_date - start_date
         if delta.days >= 0 and (start_date.date() - datetime.date.today()).days >= 0:
