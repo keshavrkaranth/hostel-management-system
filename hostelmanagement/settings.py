@@ -129,23 +129,23 @@ WSGI_APPLICATION = 'hostelmanagement.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'db7c2b8l0bnv3j',
-        'USER': 'yylgdidfokeggc',
-        'PASSWORD': 'df0cdbd0e2ae4d3322747c15089f3de772eae6c43ee8e02bfe3c1bbef04feb83',
-        'HOST': 'ec2-107-22-238-112.compute-1.amazonaws.com',
-        'PORT': '5432',
-    }
-}
-
 # DATABASES = {
 #     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
+#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
+#         'NAME': 'db7c2b8l0bnv3j',
+#         'USER': 'yylgdidfokeggc',
+#         'PASSWORD': 'df0cdbd0e2ae4d3322747c15089f3de772eae6c43ee8e02bfe3c1bbef04feb83',
+#         'HOST': 'ec2-107-22-238-112.compute-1.amazonaws.com',
+#         'PORT': '5432',
 #     }
 # }
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
 
 AUTH_USER_MODEL = 'api.Account'
 

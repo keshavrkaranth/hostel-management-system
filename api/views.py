@@ -212,5 +212,4 @@ def updateProfile(request):
 @permission_classes([IsAuthenticated])
 def homePage(request):
     warden = Warden.objects.get(id=1)
-
     return Response({'success': True, 'message': warden.user.is_warden}, status=status.HTTP_200_OK)
