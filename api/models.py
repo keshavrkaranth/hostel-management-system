@@ -84,7 +84,7 @@ class Account(AbstractBaseUser, PermissionsMixin):
 
 
 class Student(models.Model):
-    BRANCHES = [('CS', 'Computer Science'), ('IS', 'Information Science'), ('EC', 'Electronics And Communication'),
+    BRANCHES = [('N','None'),('CS', 'Computer Science'), ('IS', 'Information Science'), ('EC', 'Electronics And Communication'),
                 ('EEE', 'Electrical And Electronics'), ('ME', 'Mechanical')]
     user = models.OneToOneField(
         Account,
@@ -94,7 +94,7 @@ class Student(models.Model):
     father_name = models.CharField(max_length=200, null=True)
     father_mbl_no = models.BigIntegerField(default=None, null=True)
     USN = models.CharField(max_length=10, unique=True, null=True)
-    Branch = models.CharField(max_length=4, choices=BRANCHES)
+    branch = models.CharField(max_length=4, choices=BRANCHES,default='N')
     dob = models.DateField(
         max_length=10,
         help_text="format : YYYY-MM-DD",

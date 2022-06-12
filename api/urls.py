@@ -11,7 +11,6 @@ router.register('leaves',LeaveViewSet,'leave')
 router.register('repairs',RoomRepairsViewset)
 
 urlpatterns = router.urls + [
-    path('', homePage),
     path('login/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('registerstudent/', registerStudent),
     path('profile/', profile),

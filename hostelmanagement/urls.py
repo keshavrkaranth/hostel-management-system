@@ -26,11 +26,11 @@ urlpatterns = [
 
 schema_view = get_schema_view(
     openapi.Info(
-        title="OhLocal API",
+        title="Hostel management API",
         default_version='v1',
         description="OhLocal Api",
         terms_of_service="https://www.google.com/policies/terms/",
-        contact=openapi.Contact(email="hello@ohlocal.in"),
+        contact=openapi.Contact(email="keshavarkarantha@gmail.com"),
         license=openapi.License(name="BSD License"),
     ),
     public=True,

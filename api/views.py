@@ -67,6 +67,29 @@ class StudentViewSet(ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['gender', 'Branch', 'room', 'room__hostel']
 
+    def list(self, request, *args, **kwargs):
+        user = request.user
+        if user.is_anonymous:
+            return Response("Please login to continue", status=status.HTTP_400_BAD_REQUEST)
+        if user.is_student:
+            return Response("Student dont have this permissions", status=status.HTTP_400_BAD_REQUEST)
+        print(user)
+        warden = Warden.objects.get(user=user)
+        students = Student.objects.filter(room__hostel=warden.hostel)
+        serializer = serializers.StudentSerializer(students, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False)
+    def me(self, request):
+        user = request.user
+        if user.is_anonymous:
+            return Response("Please login to continue", status=status.HTTP_400_BAD_REQUEST)
+        if user.is_warden:
+            return Response("Warden dont have this permissions", status=status.HTTP_400_BAD_REQUEST)
+        student = Student.objects.get(user_id=user)
+        data = serializers.StudentSerializer(student)
+        return Response(data.data)
+
 
 class LeaveViewSet(ModelViewSet):
     queryset = Leave.objects.all()
@@ -98,7 +121,7 @@ class LeaveViewSet(ModelViewSet):
         user = request.user
         student = Student.objects.get(user=user)
         if not student.room_allotted:
-            return Response("Select the room to continue with the leave application")
+            return Response("Select the room to continue with the leave application",status=status.HTTP_400_BAD_REQUEST)
 
         if not student.has_filled:
             return Response("Student need to fill all the profile details", status=status.HTTP_400_BAD_REQUEST)
@@ -185,22 +208,22 @@ def addStudentRoom(request):
 
 @api_view(['POST'])
 def registerStudent(request):
-    request_map = ['name', 'email', 'password', 'phone_number']
+    request_map = ['name', 'email', 'password', 'phone']
     name = request.data.get('name')
     email = request.data.get('email')
     password = request.data.get('password')
-    phone_number = request.data.get('phone_number')
+    phone = request.data.get('phone')
 
     for i in request_map:
         if i not in request.data:
             return Response(f"{i} is required", status=status.HTTP_400_BAD_REQUEST)
     if Account.objects.filter(email=email).exists():
         return Response("Email id already exists", status=status.HTTP_400_BAD_REQUEST)
-    if Account.objects.filter(phone_number=phone_number).exists():
+    if Account.objects.filter(phone_number=phone).exists():
         return Response("Phone number already exists", status=status.HTTP_400_BAD_REQUEST)
 
     acc = Account.objects.create_user(name=name, username=email, email=email, password=password)
-    acc.phone_number = phone_number
+    acc.phone_number = phone
     acc.save()
     Student.objects.create(user=acc)
     serializer = serializers.UserSerializerWithToken(acc)
@@ -235,8 +258,3 @@ def updateProfile(request):
     return Response(data.data, status=status.HTTP_200_OK)
 
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def homePage(request):
-    warden = Warden.objects.get(id=1)
-    return Response({'success': True, 'message': warden.user.is_warden}, status=status.HTTP_200_OK)

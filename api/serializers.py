@@ -45,10 +45,13 @@ class UserSerializerWithToken(UserSerializer):
 class StudentSerializer(serializers.ModelSerializer):
     room = serializers.SerializerMethodField(read_only=True)
     user = serializers.SerializerMethodField(read_only=True)
+    hostel = serializers.SerializerMethodField(read_only=True)
+
 
     class Meta:
         model = Student
-        fields = ['father_name', 'father_mbl_no', 'address', 'USN', 'Branch', 'gender', 'room', 'user']
+        fields = ['father_name', 'father_mbl_no', 'address', 'USN', 'branch', 'gender', 'room', 'user','hostel']
+
 
     def get_room(self, obj):
         if obj.room_allotted:
@@ -58,6 +61,12 @@ class StudentSerializer(serializers.ModelSerializer):
 
     def get_user(self, obj):
         return UserSerializer(obj.user).data
+
+    def get_hostel(self,obj):
+        if obj.room_allotted:
+            hostel = obj.room.hostel
+            return HostelSerializer(hostel).data
+        return None
 
 
 class RoomsSerializer(serializers.ModelSerializer):
