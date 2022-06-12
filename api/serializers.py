@@ -26,10 +26,11 @@ class UserSerializerWithToken(UserSerializer):
     token = serializers.SerializerMethodField(read_only=True)
     is_student = serializers.SerializerMethodField(read_only=True)
     is_warden = serializers.SerializerMethodField(read_only=True)
+    hostel = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Account
-        fields = ['username', 'email', 'name', 'token', 'is_student', 'is_warden']
+        fields = ['username', 'email', 'name', 'token', 'is_student', 'is_warden','hostel']
 
     def get_is_student(self, obj):
         return obj.is_student
@@ -40,6 +41,14 @@ class UserSerializerWithToken(UserSerializer):
     def get_token(self, obj):
         token = RefreshToken.for_user(obj)
         return str(token.access_token)
+
+    def get_hostel(self,obj):
+        if obj.is_student:
+            student = Student.objects.get(user=obj)
+            gender = student.gender
+            hostel = Hostel.objects.get(gender=gender)
+            return hostel.id
+        return None
 
 
 class StudentSerializer(serializers.ModelSerializer):

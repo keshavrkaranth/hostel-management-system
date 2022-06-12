@@ -28,7 +28,7 @@ schema_view = get_schema_view(
     openapi.Info(
         title="Hostel management API",
         default_version='v1',
-        description="OhLocal Api",
+        description="Hostel management Api",
         terms_of_service="https://www.google.com/policies/terms/",
         contact=openapi.Contact(email="keshavarkarantha@gmail.com"),
         license=openapi.License(name="BSD License"),
