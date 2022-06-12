@@ -57,7 +57,7 @@ class MyAccountManager(BaseUserManager):
 class Account(AbstractBaseUser, PermissionsMixin):
     name = models.CharField(max_length=50)
     username = models.CharField(max_length=50, unique=True)
-    email = models.EmailField(max_length=30,unique=True)
+    email = models.EmailField(max_length=30, unique=True)
     phone_number = models.CharField(max_length=15)
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(auto_now_add=True)
@@ -134,7 +134,6 @@ class Room(models.Model):
     current_no_of_persons = models.PositiveIntegerField(default=0, blank=True, null=True)
     vacant = models.BooleanField(default=False)
     hostel = models.ForeignKey('Hostel', on_delete=models.CASCADE)
-    repair = models.CharField(max_length=100, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -147,6 +146,19 @@ class Room(models.Model):
             s.room_allotted = False
             s.save()
         super(Room, self).delete(*args, **kwargs)
+
+
+class RoomRepairs(models.Model):
+    room = models.ForeignKey(Room, on_delete=models.CASCADE)
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    complaint = models.TextField()
+    status = models.TextField(null=True)
+    is_resolved = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.student.user.username
 
 
 class Hostel(models.Model):

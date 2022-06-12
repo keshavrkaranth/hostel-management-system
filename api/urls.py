@@ -8,6 +8,7 @@ router.register('rooms', RoomViewSet, 'rooms')
 router.register('hostels', HostelViewSet, 'hostel')
 router.register('students', StudentViewSet, 'students')
 router.register('leaves',LeaveViewSet,'leave')
+router.register('repairs',RoomRepairsViewset)
 
 urlpatterns = router.urls + [
     path('', homePage),

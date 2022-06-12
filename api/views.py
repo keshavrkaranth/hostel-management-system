@@ -79,15 +79,15 @@ class LeaveViewSet(ModelViewSet):
             s = Leave.objects.all().order_by('-start_date')
             return Response(serializers.LeaveSerializer(s, many=True).data)
         else:
-            return Response("Dont have permission",status=status.HTTP_400_BAD_REQUEST)
+            return Response("Dont have permission", status=status.HTTP_400_BAD_REQUEST)
 
     def create(self, request, *args, **kwargs):
         input_map = ['start_date', 'end_date', 'reason']
         for i in input_map:
             if self.request.data.get('start_date') == '':
-                return Response("Start date is required",status=status.HTTP_400_BAD_REQUEST)
+                return Response("Start date is required", status=status.HTTP_400_BAD_REQUEST)
             if self.request.data.get('end_date') == '':
-                return Response("End date is required",status=status.HTTP_400_BAD_REQUEST)
+                return Response("End date is required", status=status.HTTP_400_BAD_REQUEST)
             if i not in self.request.data:
                 return Response(f"{i} is required", status=status.HTTP_400_BAD_REQUEST)
         start_date = datetime.datetime.fromisoformat(self.request.data.get('start_date'))
@@ -125,6 +125,30 @@ class LeaveViewSet(ModelViewSet):
         student = Leave.objects.filter(student__user_id=user_id)
         data = serializers.LeaveSerializer(student, many=True)
         return Response(data.data)
+
+
+class RoomRepairsViewset(ModelViewSet):
+    queryset = RoomRepairs.objects.all()
+    serializer_class = serializers.RoomRepairSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = PageNumberPagination
+
+    def list(self, request, *args, **kwargs):
+        if request.user.is_student:
+            student = Student.objects.get(user=request.user)
+            if student.room_allotted:
+                repair = RoomRepairs.objects.filter(student=student)
+                print(repair)
+                serializer = serializers.RoomRepairSerializer(repair, many=True)
+                return Response(serializer.data)
+            return Response("Please select room before adding complaints", status=status.HTTP_400_BAD_REQUEST)
+        if request.user.is_warden:
+            warden = Warden.objects.get(user=request.user)
+            print(warden.hostel.id)
+            repair = RoomRepairs.objects.filter(room__hostel__id=warden.hostel.id)
+            print(repair)
+            serializer = serializers.RoomRepairSerializer(repair, many=True)
+            return Response(serializer.data)
 
 
 @api_view(['POST'])

@@ -80,3 +80,10 @@ class LeaveSerializer(serializers.ModelSerializer):
 
     def get_student(self,obj):
         return obj.student.user.username
+
+
+class RoomRepairSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = RoomRepairs
+        fields = '__all__'
