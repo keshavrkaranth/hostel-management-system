@@ -59,27 +59,16 @@ class HostelViewSet(ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['gender']
 
-#TODO branch filter not working
+
 class StudentViewSet(ModelViewSet):
-    queryset = Student.objects.all().order_by('-created_at')
+    queryset = Student.objects.prefetch_related('room', 'room__hostel').all().order_by('-created_at')
     serializer_class = serializers.StudentSerializer
     pagination_class = PageNumberPagination
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['gender', 'branch', 'room', 'room__hostel']
+    permission_classes = [IsAuthenticated, IsWarden]
 
-    def list(self, request, *args, **kwargs):
-        user = request.user
-        if user.is_anonymous:
-            return Response("Please login to continue", status=status.HTTP_400_BAD_REQUEST)
-        if user.is_student:
-            return Response("Student dont have this permissions", status=status.HTTP_400_BAD_REQUEST)
-        print(user)
-        warden = Warden.objects.get(user=user)
-        students = Student.objects.filter(room__hostel=warden.hostel)
-        serializer = serializers.StudentSerializer(students, many=True)
-        return Response(serializer.data)
-
-    @action(detail=False)
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated, IsStudent])
     def me(self, request):
         user = request.user
         if user.is_anonymous:
@@ -97,10 +86,10 @@ class LeaveViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
     pagination_class = PageNumberPagination
 
-    #TODO add hostel filter for warden
     def list(self, request, *args, **kwargs):
-        if  request.user.is_warden:
-            s = Leave.objects.all().order_by('-start_date')
+        if request.user.is_warden:
+            warden = Warden.objects.get(user=request.user)
+            s = Leave.objects.filter(student__gender=warden.hostel.gender).order_by('-start_date')
             return Response(serializers.LeaveSerializer(s, many=True).data)
         else:
             return Response("Dont have permission", status=status.HTTP_400_BAD_REQUEST)
@@ -122,7 +111,8 @@ class LeaveViewSet(ModelViewSet):
         user = request.user
         student = Student.objects.get(user=user)
         if not student.room_allotted:
-            return Response("Select the room to continue with the leave application",status=status.HTTP_400_BAD_REQUEST)
+            return Response("Select the room to continue with the leave application",
+                            status=status.HTTP_400_BAD_REQUEST)
 
         if not student.has_filled:
             return Response("Student need to fill all the profile details", status=status.HTTP_400_BAD_REQUEST)
@@ -198,12 +188,13 @@ def addStudentRoom(request):
     if not student.no_dues:
         return Response('Student has previous dues please contact warden or make payment',
                         status=status.HTTP_400_BAD_REQUEST)
-    #TODO chane for 2 no of persons
+    # TODO chane for 2 no of persons
     student.room = room
     student.room_allotted = True
     student.save()
     room.current_no_of_persons += 1
-    room.vacant = False
+    if room.current_no_of_persons == room.max_no_of_persons:
+        room.vacant = False
     room.save()
     return Response("Room alloted for student", status=status.HTTP_200_OK)
 
@@ -232,8 +223,7 @@ def registerStudent(request):
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-
-#TODO give this permission to warden
+# TODO give this permission to warden
 @api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated, IsStudent])
 def profile(request):
@@ -260,5 +250,3 @@ def updateProfile(request):
     data.is_valid(raise_exception=True)
     data.save()
     return Response(data.data, status=status.HTTP_200_OK)
-
-
