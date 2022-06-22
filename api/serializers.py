@@ -59,7 +59,7 @@ class StudentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Student
-        fields = ['father_name', 'father_mbl_no', 'address', 'USN', 'branch', 'gender', 'room', 'user','hostel']
+        fields = ['id','father_name', 'father_mbl_no', 'address', 'USN', 'branch', 'gender', 'room', 'user','hostel']
 
 
     def get_room(self, obj):
@@ -81,13 +81,13 @@ class StudentSerializer(serializers.ModelSerializer):
 class RoomsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Room
-        fields = ('room_number', 'room_type', 'max_no_of_persons', 'current_no_of_persons', 'hostel')
+        fields = ('id','room_number', 'room_type', 'max_no_of_persons', 'current_no_of_persons', 'hostel')
 
 
 class HostelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Hostel
-        fields = ('name', 'gender', 'caretaker')
+        fields = ('id','name', 'gender', 'caretaker')
 
 
 class LeaveSerializer(serializers.ModelSerializer):

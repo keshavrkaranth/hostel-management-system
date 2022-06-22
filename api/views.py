@@ -10,6 +10,7 @@ from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend, ChoiceFilter
 from rest_framework import filters
 from .permissions import IsWardenReadOnly, IsWarden, IsStudent
+from .helpers import sendMail
 
 from . import serializers
 from .models import *
@@ -132,6 +133,25 @@ class LeaveViewSet(ModelViewSet):
         else:
             return Response('Invalid Date', status=status.HTTP_400_BAD_REQUEST)
 
+    def partial_update(self, request, *args, **kwargs):
+        accept = True if 'accept' in request.data else False
+        reject = True if 'reject' in request.data else False
+        if accept == reject:
+            return Response("Both accept and reject cannot be True")
+        pk = kwargs['pk']
+        l = Leave.objects.get(id=pk)
+        data = serializers.LeaveSerializer(l, request.data, partial=True)
+        data.is_valid(raise_exception=True)
+        data.save()
+        subject = "Your Leave Application status"
+        if accept:
+            message = f"Hurray your leave application Accepted\naccepted time:{l.updated_at.strftime('%Y/%m/%d-%H:%M:%S')}"
+
+        else:
+            message = f"Sorry your leave application Rejected\nRejected time:{l.updated_at.strftime('%Y/%m/%d-%H:%M:%S')}"
+        sendMail(emai=l.student.user.email,recipient=l.student.user.email,message=message,subject=subject)
+        return Response(data.data)
+
     @action(detail=False)
     def me(self, request):
         user_id = request.user
@@ -201,11 +221,18 @@ def addStudentRoom(request):
 
 @api_view(['POST'])
 def registerStudent(request):
-    request_map = ['name', 'email', 'password', 'phone']
+    request_map = ['name', 'email', 'password', 'phone', 'gender', 'address', 'father_name', 'father_mbl_no', 'branch',
+                   'dob']
     name = request.data.get('name')
     email = request.data.get('email')
     password = request.data.get('password')
     phone = request.data.get('phone')
+    gender = request.data.get("gender")
+    address = request.data.get("address")
+    father_name = request.data.get("father_name")
+    father_mbl_no = request.data.get("father_mbl_no")
+    branch = request.data.get("branch")
+    dob = request.data.get("dob")
 
     for i in request_map:
         if i not in request.data:
@@ -218,7 +245,9 @@ def registerStudent(request):
     acc = Account.objects.create_user(name=name, username=email, email=email, password=password)
     acc.phone_number = phone
     acc.save()
-    Student.objects.create(user=acc)
+    s = Student.objects.create(user=acc, gender=gender, address=address, father_name=father_name,
+                               father_mbl_no=father_mbl_no, branch=branch, dob=dob, has_filled=True)
+    sendMail(email, password, email, name)
     serializer = serializers.UserSerializerWithToken(acc)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
