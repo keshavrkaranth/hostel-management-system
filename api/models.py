@@ -132,7 +132,7 @@ class Room(models.Model):
         choices=room_choice, max_length=1, default=None)
     max_no_of_persons = models.PositiveIntegerField(default=2)
     current_no_of_persons = models.PositiveIntegerField(default=0, blank=True, null=True)
-    vacant = models.BooleanField(default=False)
+    vacant = models.BooleanField(default=True)
     hostel = models.ForeignKey('Hostel', on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
