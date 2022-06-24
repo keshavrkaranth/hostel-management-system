@@ -81,6 +81,57 @@ class StudentViewSet(ModelViewSet):
         return Response(data.data)
 
 
+class MedicineViewSet(ModelViewSet):
+    queryset = Medicine.objects.all().order_by("-created_at")
+    serializer_class = serializers.MedicineSerializer
+    pagination_class = PageNumberPagination
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        if request.user.is_student:
+            student = Student.objects.get(user=request.user)
+            medicine = Medicine.objects.filter(hostel__gender=student.gender)
+            serializer = serializers.MedicineSerializer(medicine, many=True)
+            return Response(serializer.data)
+        elif request.user.is_warden:
+            warden = Warden.objects.get(user=request.user)
+            medicine = Medicine.objects.filter(hostel=warden.hostel)
+            serializer = serializers.MedicineSerializer(medicine, many=True)
+            return Response(serializer.data)
+
+
+class MedicineRequestViewSet(ModelViewSet):
+    queryset = MedicineRequest.objects.all().order_by("-created_at")
+    serializer_class = serializers.MedicineRequestSerializer
+    pagination_class = PageNumberPagination
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        user = request.user
+        if user.is_student:
+            student = Student.objects.get(user=user)
+            mrequests = MedicineRequest.objects.filter(student=student)
+            serializer = serializers.MedicineRequestSerializer(mrequests,many=True)
+            return Response(serializer.data)
+        elif user.is_warden:
+            warden = Warden.objects.get(user=user)
+            mrequests = MedicineRequest.objects.filter(student__room__hostel=warden.hostel)
+            serializer = serializers.MedicineRequestSerializer(mrequests,many=True)
+            return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        request_map = ['medicine']
+        for i in request_map:
+            if i not in self.request.data:
+                return Response(f"{i} is required", status=status.HTTP_400_BAD_REQUEST)
+        student = Student.objects.get(user=request.user)
+        medicine = self.request.data.get('medicine')
+        medicinerequest = MedicineRequest.objects.create(student=student,medicine_id=medicine)
+        serializer = serializers.MedicineRequestSerializer(medicinerequest)
+        return Response(serializer.data)
+
+
+
 class LeaveViewSet(ModelViewSet):
     queryset = Leave.objects.all()
     serializer_class = serializers.LeaveSerializer
@@ -149,7 +200,7 @@ class LeaveViewSet(ModelViewSet):
 
         else:
             message = f"Sorry your leave application Rejected\nRejected time:{l.updated_at.strftime('%Y/%m/%d-%H:%M:%S')}"
-        sendMail(emai=l.student.user.email,recipient=l.student.user.email,message=message,subject=subject)
+        sendMail(emai=l.student.user.email, recipient=l.student.user.email, message=message, subject=subject)
         return Response(data.data)
 
     @action(detail=False)

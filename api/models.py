@@ -84,7 +84,8 @@ class Account(AbstractBaseUser, PermissionsMixin):
 
 
 class Student(models.Model):
-    BRANCHES = [('N','None'),('CS', 'Computer Science'), ('IS', 'Information Science'), ('EC', 'Electronics And Communication'),
+    BRANCHES = [('N', 'None'), ('CS', 'Computer Science'), ('IS', 'Information Science'),
+                ('EC', 'Electronics And Communication'),
                 ('EEE', 'Electrical And Electronics'), ('ME', 'Mechanical')]
     user = models.OneToOneField(
         Account,
@@ -94,7 +95,7 @@ class Student(models.Model):
     father_name = models.CharField(max_length=200, null=True)
     father_mbl_no = models.BigIntegerField(default=None, null=True)
     USN = models.CharField(max_length=10, unique=True, null=True)
-    branch = models.CharField(max_length=4, choices=BRANCHES,default='N')
+    branch = models.CharField(max_length=4, choices=BRANCHES, default='N')
     dob = models.DateField(
         max_length=10,
         help_text="format : YYYY-MM-DD",
@@ -217,3 +218,27 @@ class Leave(models.Model):
 
     def __str__(self):
         return f'{self.student.user.username} '
+
+
+class Medicine(models.Model):
+    name = models.CharField(max_length=100)
+    hostel = models.ForeignKey(Hostel, on_delete=models.CASCADE)
+    is_available = models.BooleanField(default=False)
+    stock = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.name}->{self.stock}"
+
+
+class MedicineRequest(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    medicine = models.ForeignKey(Medicine,on_delete=models.CASCADE)
+    remarks = models.TextField(blank=True,null=True)
+    is_resolved = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.student.user.name} -> {self.medicine.name}"

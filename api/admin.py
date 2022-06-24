@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Account, Room, Hostel, Warden, Leave, Student,RoomRepairs
+from .models import Account, Room, Hostel, Warden, Leave, Student,RoomRepairs,Medicine,MedicineRequest
 from django.contrib.auth.admin import UserAdmin
 
 
@@ -25,3 +25,5 @@ admin.site.register(Hostel)
 admin.site.register(Warden)
 admin.site.register(Leave)
 admin.site.register(RoomRepairs)
+admin.site.register(Medicine)
+admin.site.register(MedicineRequest)

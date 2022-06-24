@@ -30,7 +30,7 @@ class UserSerializerWithToken(UserSerializer):
 
     class Meta:
         model = Account
-        fields = ['username', 'email', 'name', 'token', 'is_student', 'is_warden','hostel']
+        fields = ['username', 'email', 'name', 'token', 'is_student', 'is_warden', 'hostel']
 
     def get_is_student(self, obj):
         return obj.is_student
@@ -42,11 +42,15 @@ class UserSerializerWithToken(UserSerializer):
         token = RefreshToken.for_user(obj)
         return str(token.access_token)
 
-    def get_hostel(self,obj):
+    def get_hostel(self, obj):
         if obj.is_student:
             student = Student.objects.get(user=obj)
             gender = student.gender
             hostel = Hostel.objects.get(gender=gender)
+            return hostel.id
+        elif obj.is_warden:
+            warden = Warden.objects.get(user=obj)
+            hostel = warden.hostel
             return hostel.id
         return None
 
@@ -56,11 +60,9 @@ class StudentSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField(read_only=True)
     hostel = serializers.SerializerMethodField(read_only=True)
 
-
     class Meta:
         model = Student
-        fields = ['id','father_name', 'father_mbl_no', 'address', 'USN', 'branch', 'gender', 'room', 'user','hostel']
-
+        fields = ['id', 'father_name', 'father_mbl_no', 'address', 'USN', 'branch', 'gender', 'room', 'user', 'hostel']
 
     def get_room(self, obj):
         if obj.room_allotted:
@@ -71,7 +73,7 @@ class StudentSerializer(serializers.ModelSerializer):
     def get_user(self, obj):
         return UserSerializer(obj.user).data
 
-    def get_hostel(self,obj):
+    def get_hostel(self, obj):
         if obj.room_allotted:
             hostel = obj.room.hostel
             return HostelSerializer(hostel).data
@@ -81,27 +83,44 @@ class StudentSerializer(serializers.ModelSerializer):
 class RoomsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Room
-        fields = ('id','room_number', 'room_type', 'max_no_of_persons', 'current_no_of_persons', 'hostel')
+        fields = ('id', 'room_number', 'room_type', 'max_no_of_persons', 'current_no_of_persons', 'hostel')
 
 
 class HostelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Hostel
-        fields = ('id','name', 'gender', 'caretaker')
+        fields = ('id', 'name', 'gender', 'caretaker')
 
 
 class LeaveSerializer(serializers.ModelSerializer):
     student = serializers.SerializerMethodField()
+
     class Meta:
         model = Leave
-        fields = ('id','student', 'start_date', 'end_date', 'reason', 'accept', 'reject')
+        fields = ('id', 'student', 'start_date', 'end_date', 'reason', 'accept', 'reject')
 
-    def get_student(self,obj):
+    def get_student(self, obj):
         return obj.student.user.username
 
 
 class RoomRepairSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = RoomRepairs
         fields = '__all__'
+
+
+class MedicineSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Medicine
+        fields = '__all__'
+
+
+class MedicineRequestSerializer(serializers.ModelSerializer):
+    medicine = serializers.SerializerMethodField()
+    class Meta:
+        model = MedicineRequest
+        fields = '__all__'
+
+    def get_medicine(self,obj):
+        return MedicineSerializer(obj.medicine).data
