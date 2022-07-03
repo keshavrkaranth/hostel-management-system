@@ -6,9 +6,7 @@ import django
 
 django.setup()
 
-from api.models import *
-import uuid
+from api.helpers import sendMail
 
-
-data = Student.objects.all()
-
+emai="keshavarkarantha@gmail.com"
+sendMail(emai=emai,recipient=emai,name="Keshav",password="$haShank09")

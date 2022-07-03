@@ -298,7 +298,7 @@ def registerStudent(request):
     acc.save()
     s = Student.objects.create(user=acc, gender=gender, address=address, father_name=father_name,
                                father_mbl_no=father_mbl_no, branch=branch, dob=dob, has_filled=True)
-    sendMail(email, password, email, name)
+    sendMail(emai=email, password=password, recipient=email, name=name)
     serializer = serializers.UserSerializerWithToken(acc)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
