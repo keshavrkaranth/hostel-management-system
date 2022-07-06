@@ -24,7 +24,7 @@ packaging==21.3
 pipenv==2022.5.2
 platformdirs==2.5.2
 psycopg2==2.9.3
-PyJWT==2.3.0
+PyJWT==2.4.0
 pyparsing==3.0.9
 pytz==2022.1
 requests==2.27.1
