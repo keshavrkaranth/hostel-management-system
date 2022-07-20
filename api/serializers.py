@@ -27,10 +27,22 @@ class UserSerializerWithToken(UserSerializer):
     is_student = serializers.SerializerMethodField(read_only=True)
     is_warden = serializers.SerializerMethodField(read_only=True)
     hostel = serializers.SerializerMethodField(read_only=True)
+    gender = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Account
-        fields = ['username', 'email', 'name', 'token', 'is_student', 'is_warden', 'hostel']
+        fields = ['username', 'email', 'name', 'token', 'is_student', 'is_warden', 'hostel','gender']
+
+    def get_gender(self,obj):
+        if obj.is_student:
+            student = Student.objects.get(user=obj)
+            gender = student.gender
+            return gender
+        elif obj.is_warden:
+            warden = Warden.objects.get(user=obj)
+            hostel = warden.hostel
+            return hostel.gender
+        return None
 
     def get_is_student(self, obj):
         return obj.is_student
